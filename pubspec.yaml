@@ -32,6 +32,8 @@ dependencies:
   video_player:
   flutter_video_info:
   cached_network_image:
+  pinput:
+  comment_box:
 
 
   # The following adds the Cupertino Icons font to your application.

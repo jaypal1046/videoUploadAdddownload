@@ -32,7 +32,9 @@ class OurVideoEditpage extends StatefulWidget {
 //todo:: i have to add video detail editing page the i have to connect on click invent for upload video;
 class _OurVideoEditpageState extends State<OurVideoEditpage> {
   OurProvider _currentState;
-  TextEditingController _channelNameControll;
+  TextEditingController _channelNameControll     = TextEditingController();
+  TextEditingController _categoryControll= TextEditingController();
+
 
   String url;
   @override
@@ -44,8 +46,6 @@ class _OurVideoEditpageState extends State<OurVideoEditpage> {
   }
   getdata()async{
     await _currentState.getUserDetail();
-    _channelNameControll =
-        TextEditingController(text: _currentState.getUser.fullName);
 
     url = _currentState.getUser.profilePhoto;
   }
@@ -63,8 +63,14 @@ class _OurVideoEditpageState extends State<OurVideoEditpage> {
             children: <Widget>[
               TextFormField(
                 controller: _channelNameControll,
-                decoration: InputDecoration(),
+                decoration: InputDecoration(hintText: 'please Enter the title video'),
               ),
+              SizedBox(height: 20,),
+              TextFormField(controller: _categoryControll,
+                decoration: InputDecoration(hintText: 'please specify the category of video'),
+
+              ),
+
               RaisedButton(
                 child: Padding(
                   padding: EdgeInsets.symmetric(
@@ -80,22 +86,42 @@ class _OurVideoEditpageState extends State<OurVideoEditpage> {
                   ),
                 ),
                 onPressed: () async {
-                  // uploadVideo(File video, String uid, int totolbyte, String totalSize, String fullname,String photourl, VideoData info, String steamCheck)
-                  String returnString = await OurDatabase().uploadVideo(
-                      widget.selectedVideo,
-                      _currentState.getUser.uid,
-                      widget.totolbyte,
-                      widget.totalSize,
-                      widget.fullName,
-                      widget.profilePhoto,
-                      widget.info,
-                      widget.steamCheck,
-                      _channelNameControll.text);
+
+
+                     if(_categoryControll.text==null||_channelNameControll.text==null){
+                       if(_channelNameControll.text==null){
+                         Scaffold.of(context).showSnackBar(
+                             SnackBar(content:Text("Enter the title of the video")
+                               ,duration:  Duration(seconds: 2),
+                             ));
+                       }else {
+                         Scaffold.of(context).showSnackBar(
+                             SnackBar(content: Text(
+                                 "please specify the category of video Ex. child, education ot fun")
+                               , duration: Duration(seconds: 2),
+                             ));
+                       }
+                    } else {
+                      // uploadVideo(File video, String uid, int totolbyte, String totalSize, String fullname,String photourl, VideoData info, String steamCheck)
+                      print(_categoryControll.text);
+                      print(_channelNameControll.text);
+                       String returnString = await OurDatabase().uploadVideo(
+                          widget.selectedVideo,
+                          _currentState.getUser.uid,
+                          widget.totolbyte,
+                          widget.totalSize,
+                          widget.fullName,
+                          widget.profilePhoto,
+                          widget.info,
+                          widget.steamCheck,
+                          _channelNameControll.text,
+                          _categoryControll.text);
 
                   // await OurDatabase().createChannel(_Channel_Name_Controll.text, _currentState.getCurrentUser.uid, _currentState.getCurrentUser.fullName,url);
                   if (returnString != null) {
                     Navigator.pop(context);
                   }
+                    }
                 },
               ),
             ],

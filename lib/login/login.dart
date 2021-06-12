@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:video_uploader/database/database.dart';
 import 'package:video_uploader/home/home.dart';
+import 'package:video_uploader/home/ournew.dart';
 import 'package:video_uploader/model/user.dart';
 import 'package:video_uploader/root/Ourroot.dart';
 class LoginPage extends StatefulWidget {
@@ -23,86 +24,6 @@ class _LoginPageState extends State<LoginPage> {
         // Redraw so that the username label reflects the focus state
       });
     });
-  }
-
-  void loginUser(String phone, BuildContext context) {
-    FirebaseAuth _auth = FirebaseAuth.instance;
-
-    _auth.verifyPhoneNumber(
-        phoneNumber: phone,
-        timeout: Duration(seconds: 120),
-        verificationCompleted: (AuthCredential credential) async {
-          Navigator.of(context).pop();
-          UserCredential authResult =
-          await _auth.signInWithCredential(credential);
-
-          OurUser _ourUser = OurUser();
-
-          User user = authResult.user;
-          _ourUser.uid = user.uid;
-          _ourUser.phoneNumber = user.phoneNumber;
-          String _returnString = await OurDatabase().createUser(_ourUser);
-          print("$_returnString jaypal");
-          if (_returnString == "success") {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => OurRoot()));
-          } else {
-            print("error");
-          }
-        },
-        verificationFailed: (FirebaseAuthException exception) {
-          print(exception);
-        },
-        codeSent: (String verificationId, [int forceResendingToken]) {
-          showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) {
-                return AlertDialog(
-                  title: Text("Give the code"),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: _otpController,
-                      )
-                    ],
-                  ),
-                  actions: [
-                    FlatButton(
-                      onPressed: () async {
-                        final code = _otpController.text.trim();
-                        OurUser _ourUser = OurUser();
-                        AuthCredential credential =
-                        PhoneAuthProvider.credential(
-                            verificationId: verificationId, smsCode: code);
-                        UserCredential authResult =
-                        await _auth.signInWithCredential(credential);
-                        User user = authResult.user;
-                        _ourUser.uid = user.uid;
-                        _ourUser.phoneNumber = user.phoneNumber;
-                        String _returnString =
-                        await OurDatabase().createUser(_ourUser);
-                        print("$_returnString jaypal");
-                        if (_returnString == "success") {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>  OurRoot()
-                              ));
-                        } else {
-                          print("error");
-                        }
-                      },
-                      child: Text("Confirm"),
-                      textColor: Colors.black,
-                      color: Colors.white,
-                    )
-                  ],
-                );
-              });
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {});
   }
 
   @override
@@ -140,25 +61,28 @@ class _LoginPageState extends State<LoginPage> {
               focusNode: _usernameFocusNode,
             ),
             SizedBox(height: 12.0),
-            ButtonBar(
-              children: <Widget>[
-                ElevatedButton(
-                  child: Text('NEXT'),
-                  style: ButtonStyle(
-                    elevation: MaterialStateProperty.all(8.0),
-                    shape: MaterialStateProperty.all(
-                      BeveledRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(7.0)),
-                      ),
-                    ),
-                  ),
-                  onPressed: () {
-                    final phone = _usernameController.text.trim();
-                    loginUser(phone, context);
-                  },
-                ),
-              ],
-            ),
+
+           Padding(padding: EdgeInsets.only(left: 100
+           ,
+             right: 100
+           )
+           ,
+           child:  ButtonTheme(
+             minWidth: 1,
+             height: 40,
+             child: FlatButton(onPressed: () {
+               final phone = _usernameController.text.trim();
+               Navigator.push(context, MaterialPageRoute(builder: (context)=>OTPScreen(phone:phone)));
+
+             },
+               child: Text("Next"),
+               textColor: Colors.black,
+               color: Colors.blue,
+             ),
+           ),
+           )
+
+
           ],
         ),
       ),

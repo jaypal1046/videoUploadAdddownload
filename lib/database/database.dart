@@ -83,6 +83,24 @@ class OurDatabase{
 
 
   }
+  Future<OurUser> getUserDetailId(String uid)async {
+    OurUser  retval=OurUser();
+    try{
+
+      CollectionReference snapshot=await FirebaseFirestore.instance.collection("User");
+      DocumentSnapshot collectionsn= await snapshot.doc(uid).get();
+      if(collectionsn.data() != null){
+        retval.uid=collectionsn.data()["uid"];
+        retval.fullName=collectionsn.data()["fullName"];
+        retval.phoneNumber=collectionsn.data()["phoneNumber"];
+        retval.profilePhoto=collectionsn.data()["profilePhoto"];
+      }
+    }catch(e){
+      print(e);
+    }
+    return retval;
+
+  }
   String formatBytes(int bytes, int decimals) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
@@ -91,7 +109,6 @@ class OurDatabase{
         ' ' +
         suffixes[i];
   }
-
   Future<String> uploadVideotodatabase(
       video, String uid, int total, String totalSize, VideoData info) async {
     try {
@@ -131,8 +148,12 @@ class OurDatabase{
       String photourl,
       VideoData info,
       String steamCheck,
-      String videotital) async {
+
+      String videotital,String categoty) async {
     try {
+      int like=0;
+      int dislike=0;
+      int view=0;
       String url =
       await uploadVideotodatabase(video, uid, totolbyte, totalSize, info);
 
@@ -143,6 +164,12 @@ class OurDatabase{
         "videoId": videosId,
         "url": url,
         "totalSize": totalSize,
+        "like":like,
+        "dislike":dislike,
+        "uploaderUid":uid,
+        "uploadedDate":Timestamp.now(),
+        "view":view,
+        "catergary":categoty,
       });
 
       print(url);

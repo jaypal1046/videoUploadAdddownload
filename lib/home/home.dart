@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_video_info/flutter_video_info.dart';
@@ -8,13 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_uploader/Util/Customtheme.dart';
+import 'package:video_uploader/Util/catch_Image.dart';
 import 'package:video_uploader/Util/imagePicker.dart';
 import 'package:video_uploader/VideoPlay/Playvideo.dart';
 import 'package:video_uploader/VideoPlay/ourVideoEditPage.dart';
 import 'package:video_uploader/Widget/OurCustomTitle.dart';
 import 'package:video_uploader/Widget/Widget.dart';
-import 'package:video_uploader/home/ournew.dart';
+import 'package:video_uploader/database/database.dart';
 import 'package:video_uploader/login/login.dart';
+import 'package:video_uploader/model/user.dart';
 import 'package:video_uploader/profile/profile.dart';
 import 'package:video_uploader/provider/provider.dart';
 class HomePage extends StatefulWidget {
@@ -23,9 +24,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  TextEditingController serachController = TextEditingController();
 
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String query = "";
   @override
   void initState() {
 
@@ -118,6 +121,7 @@ class _HomePageState extends State<HomePage> {
       String totalSize = formatBytes(totolbyte, 2);
       OurProvider state = Provider.of<OurProvider>(context, listen: false);
       await state.getUserDetail();
+
       await Navigator.push(
           context,
           MaterialPageRoute(
@@ -180,13 +184,50 @@ class _HomePageState extends State<HomePage> {
 
             child: Icon(Icons.person_rounded),
           ),
+
           Icon(Icons.notifications),
         ],
       ),
       body: Column(
         children: [
 
-          videoList(context),
+//todo::jfhgfhsd
+          TextFormField(
+            controller: serachController,
+            onChanged: (val) {
+              setState(() {
+                query = val;
+              });
+            },
+            cursorColor: UniversalVrialbes.blackColor,
+            autofocus: true,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              fontSize: 25,
+            ),
+            decoration: InputDecoration(
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: Colors.black87,
+                  ),
+                  onPressed: () {
+                    WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => serachController.clear());
+                    serachController.clear();
+                    query = "";
+                  },
+                ),
+                border: InputBorder.none,
+                hintText: "Search",
+                hintStyle: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                  color: Colors.black87,
+                )),
+          ),
+         serachController.text==null?videoList(context):videoListbyserach(context, query),
           RaisedButton(
             onPressed: () =>addMediaModel(context),
 
@@ -197,6 +238,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
   Widget videoList(BuildContext context)
   {
     return StreamBuilder<QuerySnapshot>(
@@ -214,35 +256,110 @@ class _HomePageState extends State<HomePage> {
             }else{
             var docList = snapshot.data.docs;
 
+
+
                  return Expanded(child: ListView.builder(
                         padding: EdgeInsets.all(10),
                         itemCount: docList.length,
                         itemBuilder: (context, index) {
+
                         if(docList[index].id!=null){
-                        return Container(
+                        return  docList[index].data()!=null?
+                                     SizedBox(
+                                         height: 220,
+                                         child: Column(
+                                       children: <Widget>[
 
-                        child: docList[index].data()!=null?Column(
-                        children: <Widget>[
+                                         Padding(
+                                           padding: EdgeInsets.only(top: 20,left:20,right:20,),
+                                           child: SizedBox(
+                                             height: 150,
+                                             child: OurList(url:docList[index].data()["url"], doclist:docList[index].data()),
 
-                        Padding(
-                        padding: EdgeInsets.only(top: 20,left:20,right:20,),
-                        child: SizedBox(
-                        height: 150,
-                        child: OurList(url:docList[index].data()["url"]),
+                                           ),
 
-                        ),
+                                         ),
 
-                        ),
+                                         StreamBuilder<QuerySnapshot>(
+                                             stream: _firestore.collection("User").snapshots(),
+                                             builder: (context,snapshot){
+                                               if(snapshot.data==null){
+                                                 return Container(
+                                                   height: 0.1,
+                                                 );
+                                               }
+                                               else{
+                                                 var docLists = snapshot.data.docs;
+                                                 var view=docList[index].data()["view"];
+                                                 if(docList[index].data()["view"]==null){
+                                                   view=0;
+                                                 }
+                                                 return Expanded(
+                                                     child: ListView.builder(
+                                                         padding: EdgeInsets.all(10),
+                                                         itemCount: docLists.length,
+                                                         itemBuilder: (context,inde){
+
+                                                           if(docLists[inde].id==docList[index].data()["uploaderUid"]){
+                                                             return Row(
+                                                               children: [
+                                                                 OurCachedImage(
+                                                                   docLists[inde].data()["profilePhoto"],
+                                                                   isRound: true,
+                                                                   radius: 30,
+                                                                 ),
+                                                                 SizedBox(width: 20,),
+                                                                 Column(
+                                                                   children: [
+
+                                                                     Text("${docList[index].data()["videoTital"]}",style: TextStyle(fontWeight: FontWeight.bold),),
+                                                                     Text("${docLists[inde].data()["fullName"]}"),
+                                                                   ],
+                                                                 ),
+                                                                 SizedBox(width: 10,),
+                                                                 Column(
+                                                                   children: [
+
+                                                                     //Text("${docList[index].data()["uploadedDate"]}",style: TextStyle(fontWeight: FontWeight.bold),),
+                                                                     Text("${view} view"),
+                                                                   ],
+                                                                 ),
+                                                                 SizedBox(width: 10,),
+                                                                 Column(
+                                                                   children: [
+
+                                                                     Text("0 days"),
+                                                                     Text("${docList[index].data()["catergary"]} catergory"),
+                                                                   ],
+                                                                 ),
+                                                               ],
+                                                             );
+                                                           }else{
+
+                                                             return Container(
+                                                               height: 0.1,
+                                                             );
+                                                           }
+                                                         }
+                                                     )
+                                                 );
+                                               }
+                                             }
+                                         ),
 
 
-                          Text(docList[index].data()["videoTital"]),
 
-
-                          ],
-                          ):CircularProgressIndicator(),
-                          );
+                                       ],
+                                     )):
+                        Container(
+                          height: 50,
+                          width: 50,
+                          child: CircularProgressIndicator(),
+                        );
                           }else{
                           return Container(
+
+
                           child: CircularProgressIndicator(),
                           );
                           }
@@ -255,11 +372,152 @@ class _HomePageState extends State<HomePage> {
                 );
 
             }
+  Widget videoListbyserach(BuildContext context,String queary)
+  {
+    return StreamBuilder<QuerySnapshot>(
+        stream: _firestore.collection("Videocoll").snapshots(),
+
+        builder: (context,snapshot){
+          if(snapshot.data==null){
+            return Container(
+              child: Align(
+                alignment: Alignment.center,
+                child: CircularProgressIndicator(),
+
+              ),
+            );
+          }else{
+            var docList = snapshot.data.docs;
+
+
+
+            return Expanded(child: ListView.builder(
+              padding: EdgeInsets.all(10),
+              itemCount: docList.length,
+              itemBuilder: (context, index) {
+
+                if(docList[index].id!=null){
+                  var titla=docList[index].data()["videoTital"];
+                  var fullname=docList[index].data()["fullName"];
+                  return  docList[index].data()!=null?
+                  titla.contains(queary)||fullname.contains(queary)? SizedBox(
+                      height: 220,
+                      child: Column(
+                        children: <Widget>[
+
+                          Padding(
+                            padding: EdgeInsets.only(top: 20,left:20,right:20,),
+                            child: SizedBox(
+                              height: 150,
+                              child: OurList(url:docList[index].data()["url"], doclist:docList[index].data()),
+
+                            ),
+
+                          ),
+
+                          StreamBuilder<QuerySnapshot>(
+                              stream: _firestore.collection("User").snapshots(),
+                              builder: (context,snapshot){
+                                if(snapshot.data==null){
+                                  return Container(
+                                    height: 0.1,
+                                  );
+                                }
+                                else{
+                                  var docLists = snapshot.data.docs;
+                                  var view=docList[index].data()["view"];
+                                  if(docList[index].data()["view"]==null){
+                                    view=0;
+                                  }
+                                  return Expanded(
+                                      child: ListView.builder(
+                                          padding: EdgeInsets.all(10),
+                                          itemCount: docLists.length,
+                                          itemBuilder: (context,inde){
+
+                                            if(docLists[inde].id==docList[index].data()["uploaderUid"]){
+                                              return Row(
+                                                children: [
+                                                  OurCachedImage(
+                                                    docLists[inde].data()["profilePhoto"],
+                                                    isRound: true,
+                                                    radius: 30,
+                                                  ),
+                                                  SizedBox(width: 20,),
+                                                  Column(
+                                                    children: [
+
+                                                      Text("${docList[index].data()["videoTital"]}",style: TextStyle(fontWeight: FontWeight.bold),),
+                                                      Text("${docLists[inde].data()["fullName"]}"),
+                                                    ],
+                                                  ),
+                                                  SizedBox(width: 10,),
+                                                  Column(
+                                                    children: [
+
+                                                      //Text("${docList[index].data()["uploadedDate"]}",style: TextStyle(fontWeight: FontWeight.bold),),
+                                                      Text("${view} view"),
+                                                    ],
+                                                  ),
+                                                  SizedBox(width: 10,),
+                                                  Column(
+                                                    children: [
+
+                                                      Text("0 days"),
+                                                      Text("${docList[index].data()["catergary"]} catergory"),
+                                                    ],
+                                                  ),
+                                                ],
+                                              );
+                                            }else{
+
+                                              return Container(
+                                                height: 0.1,
+                                              );
+                                            }
+                                          }
+                                      )
+                                  );
+                                }
+                              }
+                          ),
+
+
+
+                        ],
+                      )):
+                  Container(
+                    height: 50,
+                    width: 50,
+                    child: CircularProgressIndicator(),
+                  ): Container(
+                    height: 50,
+                    width: 50,
+                    child: CircularProgressIndicator(),
+                  );
+                }else{
+                  return Container(
+
+
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+
+              },
+            ));
+          }
+        }
+    );
+
+  }
 }
 
 class OurList extends  StatefulWidget {
   String url;
-  OurList({this.url});
+  Map<String, dynamic> doclist;
+
+  OurList(  {this.url,this.doclist});
   @override
   _OurListState createState() => _OurListState();
 }
@@ -288,7 +546,7 @@ class _OurListState extends State<OurList> {
       width: double.infinity,
       child: GestureDetector(
         onTap: (){
-          Navigator.push(context, MaterialPageRoute(builder: (context)=>PlayVideoByLink(video: widget.url,)));
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>PlayVideoByLink(video: widget.url,doclists:widget.doclist)));
         },
 
         child: VideoPlayer(_controller),
